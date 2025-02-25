@@ -1,103 +1,95 @@
+using DotNetEnv;
 using System;
 using System.Collections.Generic;
-using DotNetEnv;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using PersonnelHolidayPlanner.Models;
 
-namespace PersonnelHolidayPlanner.DBContext;
+namespace DBContext;
 
-public partial class PHPContext : DbContext
-{
-    public string ConnStr { get; private set; }
+public partial class PHPContext : DbContext {
 
-    public PHPContext()
-    {
-        Env.Load();
-        SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
-        builder.DataSource = Environment.GetEnvironmentVariable("mssql_host");
-        builder.InitialCatalog = Environment.GetEnvironmentVariable("mssql_initialCatalog");
-        builder.UserID = Environment.GetEnvironmentVariable("mssql_username");
-        builder.Password = Environment.GetEnvironmentVariable("mssql_password");
-        builder.IntegratedSecurity = false; // Explicitly set to false
-        builder.MultipleActiveResultSets = true;
-        builder.TrustServerCertificate = true;
+  public string ConnStr { get; private set; }
+  public PHPContext() {
+    Env.Load();
+    SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
+    builder.DataSource = Environment.GetEnvironmentVariable("mssql_host");
+    builder.InitialCatalog =
+        Environment.GetEnvironmentVariable("mssql_initialCatalog");
+    builder.UserID = Environment.GetEnvironmentVariable("mssql_username");
+    builder.Password = Environment.GetEnvironmentVariable("mssql_password");
+    builder.IntegratedSecurity = false; // Explicitly set to false
+    builder.MultipleActiveResultSets = true;
+    builder.TrustServerCertificate = true;
 
-        ConnStr = builder.ConnectionString;
-    }
+    ConnStr = builder.ConnectionString;
+  }
 
-    public virtual DbSet<Employee> Employees { get; set; }
+  public PHPContext(DbContextOptions<PHPContext> options) : base(options) {}
 
-    public virtual DbSet<Leave> Leaves { get; set; }
+  public virtual DbSet<Employee> Employees { get; set; }
 
-    public virtual DbSet<Project> Projects { get; set; }
+  public virtual DbSet<Leave> Leaves { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-        optionsBuilder.UseSqlServer(ConnStr);
+  public virtual DbSet<Project> Projects { get; set; }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Employee>(entity =>
-        {
-            entity.HasKey(e => e.EmployeeId).HasName("PK__Employee__7AD04F11E00E8AEB");
+  protected override void
+  OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+      optionsBuilder.UseSqlServer(ConnStr);
 
-            entity.ToTable("Employee");
+  protected override void OnModelCreating(ModelBuilder modelBuilder) {
+    modelBuilder.Entity<Employee>(entity => {
+      entity.HasKey(e => e.EmployeeId).HasName("PK__Employee");
 
-            entity.Property(e => e.FirstName).HasMaxLength(50);
-            entity.Property(e => e.LastName).HasMaxLength(50);
+      entity.ToTable("Employee");
 
-            entity
-                .HasMany(d => d.Projects)
-                .WithMany(p => p.Employees)
-                .UsingEntity<Dictionary<string, object>>(
-                    "EmployeeProject",
-                    r =>
-                        r.HasOne<Project>()
-                            .WithMany()
-                            .HasForeignKey("ProjectId")
-                            .OnDelete(DeleteBehavior.ClientSetNull)
-                            .HasConstraintName("FK__EmployeeP__Proje__3F466844"),
-                    l =>
-                        l.HasOne<Employee>()
-                            .WithMany()
-                            .HasForeignKey("EmployeeId")
-                            .OnDelete(DeleteBehavior.ClientSetNull)
-                            .HasConstraintName("FK__EmployeeP__Emplo__3E52440B"),
-                    j =>
-                    {
-                        j.HasKey("EmployeeId", "ProjectId")
-                            .HasName("PK__Employee__6DB1E4FE38367151");
-                        j.ToTable("EmployeeProject");
-                    }
-                );
-        });
+      entity.Property(e => e.FirstName).HasMaxLength(50);
+      entity.Property(e => e.LastName).HasMaxLength(50);
 
-        modelBuilder.Entity<Leave>(entity =>
-        {
-            entity.HasKey(e => e.LeaveId).HasName("PK__Leave__F7CD60157C6E773F");
+      entity.HasMany(d => d.Projects)
+          .WithMany(p => p.Employees)
+          .UsingEntity<Dictionary<string, object>>(
+              "EmployeeProject",
+              r => r.HasOne<Project>()
+                       .WithMany()
+                       .HasForeignKey("ProjectId")
+                       .OnDelete(DeleteBehavior.ClientSetNull)
+                       .HasConstraintName("FK__EmployeeProject__Project"),
+              l => l.HasOne<Employee>()
+                       .WithMany()
+                       .HasForeignKey("EmployeeId")
+                       .OnDelete(DeleteBehavior.ClientSetNull)
+                       .HasConstraintName("FK__EmployeeProject__Employee"),
+              j => {
+                j.HasKey("EmployeeId", "ProjectId")
+                    .HasName("PK__EmployeeProject");
+                j.ToTable("EmployeeProject");
+              });
+    });
 
-            entity.ToTable("Leave");
+    modelBuilder.Entity<Leave>(entity => {
+      entity.HasKey(e => e.LeaveId).HasName("PK__Leave");
 
-            entity.Property(e => e.LeaveType).HasMaxLength(50);
+      entity.ToTable("Leave");
 
-            entity
-                .HasOne(d => d.Employee)
-                .WithMany(p => p.Leaves)
-                .HasForeignKey(d => d.EmployeeId)
-                .HasConstraintName("FK__Leave__Employ__3B75D760");
-        });
+      entity.Property(e => e.LeaveType).HasMaxLength(50);
 
-        modelBuilder.Entity<Project>(entity =>
-        {
-            entity.HasKey(e => e.ProjectId).HasName("PK__Project__761ABEF0C3FB5F6E");
+      entity.HasOne(d => d.Employee)
+          .WithMany(p => p.Leaves)
+          .HasForeignKey(d => d.EmployeeId)
+          .HasConstraintName("FK__Leave__Employee");
+    });
 
-            entity.ToTable("Project");
+    modelBuilder.Entity<Project>(entity => {
+      entity.HasKey(e => e.ProjectId).HasName("PK__Project");
 
-            entity.Property(e => e.Name).HasMaxLength(100);
-        });
+      entity.ToTable("Project");
 
-        OnModelCreatingPartial(modelBuilder);
-    }
+      entity.Property(e => e.Name).HasMaxLength(100);
+    });
 
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    OnModelCreatingPartial(modelBuilder);
+  }
+
+  partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
