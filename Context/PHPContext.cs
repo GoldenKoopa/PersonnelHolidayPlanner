@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using DotNetEnv;
-using LeaveCliTool.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using PersonnelHolidayPlanner.Models;
 
-namespace DBContext;
+namespace PersonnelHolidayPlanner.DBContext;
 
 public partial class PHPContext : DbContext
 {

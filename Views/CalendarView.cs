@@ -1,6 +1,6 @@
 using Spectre.Console;
 
-namespace LeaveCli.Views;
+namespace PersonnelHolidayPlanner.Views;
 
 public class CalendarView : View
 {

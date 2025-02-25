@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace LeaveCliTool.Models;
+namespace PersonnelHolidayPlanner.Models;
 
 public partial class Employee
 {

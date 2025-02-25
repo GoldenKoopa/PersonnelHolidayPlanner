@@ -1,4 +1,4 @@
-﻿namespace LeaveCli;
+﻿namespace PersonnelHolidayPlanner;
 
 class Program
 {

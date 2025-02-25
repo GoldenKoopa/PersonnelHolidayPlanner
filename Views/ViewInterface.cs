@@ -1,4 +1,4 @@
-namespace LeaveCli.Views;
+namespace PersonnelHolidayPlanner.Views;
 
 public interface View {
     void renderView();
