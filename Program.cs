@@ -2,24 +2,26 @@
 
 class Program
 {
+    // intial view
     static Views.AppState state = Views.AppState.CALENDAR;
-
-    static DateTime currentDate = DateTime.Now;
+    public static DBContext.PHPContext context = new DBContext.PHPContext();
 
     static void Main(string[] args)
     {
-        // Initalize();
+        Initialize();
 
         while (true)
         {
             RenderViews();
 
-            ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-            HandleKeys(keyInfo);
+            HandleKeys();
         }
     }
 
-    // public static void Initialize() { }
+    public static void Initialize()
+    {
+        // Console.WriteLine(context.Leaves.First().LeaveType);
+    }
 
     public static void RenderViews()
     {
@@ -34,8 +36,9 @@ class Program
         }
     }
 
-    public static void HandleKeys(ConsoleKeyInfo keyInfo)
+    public static void HandleKeys()
     {
+        ConsoleKeyInfo keyInfo = Console.ReadKey(true);
         if (Views.Views.map.TryGetValue(state, out Views.View? currentView))
         {
             currentView.handleKeys(keyInfo);

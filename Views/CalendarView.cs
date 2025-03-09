@@ -4,17 +4,29 @@ namespace PersonnelHolidayPlanner.Views;
 
 public class CalendarView : View
 {
-    static List<DateTime> leaveDays = new()
-    {
-        DateTime.Now.AddDays(2).Date,
-        DateTime.Now.AddDays(3).Date,
-        DateTime.Now.AddDays(5).Date,
-        DateTime.Now.AddDays(-2).Date,
-        DateTime.Now.AddDays(-5).Date,
-        DateTime.Now.AddDays(-7).Date,
-    };
-
+    int employeeId = 1;
     DateTime currentDate = DateTime.Now;
+    DBContext.PHPContext context = Program.context;
+
+    private Dictionary<DateOnly, string> leaveTypes;
+
+    public CalendarView()
+    {
+        leaveTypes = new Dictionary<DateOnly, string>();
+        foreach (Models.Leave leave in context.Employees.Find(employeeId)!.Leaves)
+        {
+            DateOnly startDate = leave.StartDate;
+            DateOnly endDate = leave.EndDate;
+            string type = leave.LeaveType;
+
+            DateOnly date = startDate;
+            while (date <= endDate)
+            {
+                leaveTypes[date] = type;
+                date = date.AddDays(1);
+            }
+        }
+    }
 
     public void renderView()
     {
@@ -45,14 +57,15 @@ public class CalendarView : View
                 currentRow.Clear();
             }
 
-            var currentDay = new DateTime(currentDate.Year, currentDate.Month, day);
+            DateTime currentDayDateTime = new DateTime(currentDate.Year, currentDate.Month, day);
+            DateOnly currentDay = DateOnly.FromDateTime(currentDayDateTime);
             if (day == currentDate.Day)
             {
                 currentRow.Add($"[bold yellow]{day}[/]"); // Highlight the selected day
             }
-            else if (leaveDays.Contains(currentDay))
+            else if (leaveTypes.ContainsKey(currentDay))
             {
-                currentRow.Add($"[bold red]{day}[/]");
+                currentRow.Add($"[bold green]{day}[/]");
             }
             else
             {
@@ -74,11 +87,16 @@ public class CalendarView : View
                 .BorderColor(Color.Blue)
         );
 
-        AnsiConsole.Write(
-            new Panel($"[bold green]You selected: {currentDate.ToShortDateString()}[/]")
-                .Header("test header", Justify.Center)
-                .BorderColor(Color.Red)
-        );
+        string text = $"[bold green]You selected: {currentDate.ToShortDateString()}[/]";
+        DateOnly currentDayOnly = DateOnly.FromDateTime(currentDate);
+        if (leaveTypes.ContainsKey(currentDayOnly))
+        {
+            if (leaveTypes.TryGetValue(currentDayOnly, out string? type))
+            {
+                text += $"\n[bold]Leave Type:[/] {type}";
+            }
+        }
+        AnsiConsole.Write(new Panel(text).Header("Info", Justify.Center).BorderColor(Color.Red));
     }
 
     public void handleKeys(ConsoleKeyInfo keyInfo)
