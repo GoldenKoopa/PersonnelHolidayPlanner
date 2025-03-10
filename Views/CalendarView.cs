@@ -9,6 +9,7 @@ public class CalendarView : View
     DBContext.PHPContext context = Program.context;
 
     private Dictionary<DateOnly, string> leaveTypes;
+    private Dictionary<string, Dictionary<DateOnly, List<string>>> projectDays;
 
     public CalendarView()
     {
@@ -26,6 +27,8 @@ public class CalendarView : View
                 date = date.AddDays(1);
             }
         }
+        projectDays = new Dictionary<string, Dictionary<DateOnly, List<string>>>();
+        getOrCreateMonth(currentDate);
     }
 
     public void renderView()
@@ -42,6 +45,7 @@ public class CalendarView : View
 
         DateTime firstDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
         int daysInMonth = DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
+        Dictionary<DateOnly, List<string>> projectDaysMonth = getOrCreateMonth(currentDate);
 
         List<string> currentRow = new();
         for (int i = 0; i < (int)firstDayOfMonth.DayOfWeek; i++)
@@ -66,6 +70,10 @@ public class CalendarView : View
             else if (leaveTypes.ContainsKey(currentDay))
             {
                 currentRow.Add($"[bold green]{day}[/]");
+            }
+            else if (projectDaysMonth.ContainsKey(currentDay))
+            {
+                currentRow.Add($"[bold red]{day}[/]");
             }
             else
             {
@@ -95,6 +103,15 @@ public class CalendarView : View
             {
                 text += $"\n[bold]Leave Type:[/] {type}";
             }
+        }
+        else if (projectDaysMonth.TryGetValue(currentDayOnly, out List<string>? projects))
+        {
+            text += $"\n[bold]Blocked by following projects:[/]";
+            foreach (string project in projects)
+            {
+                text += $"\n[bold]   - {project}[/]";
+            }
+
         }
         AnsiConsole.Write(new Panel(text).Header("Info", Justify.Center).BorderColor(Color.Red));
     }
@@ -165,5 +182,51 @@ public class CalendarView : View
                 Environment.Exit(0);
                 break;
         }
+    }
+
+
+    public Dictionary<DateOnly, List<string>> getOrCreateMonth(DateTime currentDate)
+    {
+        Dictionary<DateOnly, List<string>> month;
+        if (!projectDays.TryGetValue(currentDate.Month.ToString() + currentDate.Year.ToString(), out month))
+        {
+            return createMonth(currentDate);
+        }
+        return month;
+    }
+
+    public Dictionary<DateOnly, List<string>> createMonth(DateTime currentDate)
+    {
+        Dictionary<DateOnly, List<string>> result = new Dictionary<DateOnly, List<string>>();
+        var projects = context.Employees.Find(this.employeeId)!.Projects;
+
+        foreach (Models.Project project in projects)
+        {
+            var employeeCount = project.Employees.Count();
+            DateOnly firstDayOfMonth = DateOnly.FromDateTime(new DateTime(currentDate.Year, currentDate.Month, 1));
+            DateOnly lastDayOfMonth = DateOnly.FromDateTime(new DateTime(currentDate.Year, currentDate.Month, DateTime.DaysInMonth(currentDate.Year, currentDate.Month)));
+
+            for (DateOnly date = firstDayOfMonth; date <= lastDayOfMonth; date = date.AddDays(1))
+            {
+                int employeesOnLeave = project.Employees.Where(e =>
+                                    e.Leaves.Any(l => l.StartDate <= date && l.EndDate >= date)).Count();
+                if (employeesOnLeave == project.Employees.Count() - 1)
+                {
+                    if (result.TryGetValue(date, out List<string> projectList))
+                    {
+                        projectList.Add(project.Name);
+                    }
+                    else
+                    {
+                        result.Add(date, new List<string>() { project.Name });
+                    }
+                }
+            }
+        }
+
+
+
+        projectDays.Add(currentDate.Month.ToString() + currentDate.Year.ToString(), result);
+        return result;
     }
 }
