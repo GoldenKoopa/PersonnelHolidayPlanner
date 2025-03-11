@@ -1,10 +1,12 @@
 using Spectre.Console;
+using DotNetEnv;
+using System.Globalization;
 
 namespace PersonnelHolidayPlanner.Views;
 
 public class CalendarView : View
 {
-    int employeeId = 1;
+    private int employeeId;
     DateTime currentDate = DateTime.Now;
     DBContext.PHPContext context = Program.context;
 
@@ -13,6 +15,10 @@ public class CalendarView : View
 
     public CalendarView()
     {
+        Env.Load();
+        // if
+        // this.employeeId = Environment.GetEnvironmentVariable("employee_id");
+        this.employeeId = 1;
         leaveTypes = new Dictionary<DateOnly, string>();
         foreach (Models.Leave leave in context.Employees.Find(employeeId)!.Leaves)
         {
@@ -95,6 +101,7 @@ public class CalendarView : View
                 .BorderColor(Color.Blue)
         );
 
+        Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
         string text = $"[bold green]You selected: {currentDate.ToShortDateString()}[/]";
         DateOnly currentDayOnly = DateOnly.FromDateTime(currentDate);
         if (leaveTypes.ContainsKey(currentDayOnly))
@@ -111,7 +118,6 @@ public class CalendarView : View
             {
                 text += $"\n[bold]   - {project}[/]";
             }
-
         }
         AnsiConsole.Write(new Panel(text).Header("Info", Justify.Center).BorderColor(Color.Red));
     }
@@ -184,49 +190,34 @@ public class CalendarView : View
         }
     }
 
-
     public Dictionary<DateOnly, List<string>> getOrCreateMonth(DateTime currentDate)
     {
-        Dictionary<DateOnly, List<string>> month;
-        if (!projectDays.TryGetValue(currentDate.Month.ToString() + currentDate.Year.ToString(), out month))
+        Dictionary<DateOnly, List<string>>? month;
+        if (
+            !projectDays.TryGetValue(
+                currentDate.Month.ToString() + currentDate.Year.ToString(),
+                out month
+            )
+        )
         {
-            return createMonth(currentDate);
+            DateOnly firstDayOfMonth = DateOnly.FromDateTime(
+                new DateTime(currentDate.Year, currentDate.Month, 1)
+            );
+            DateOnly lastDayOfMonth = DateOnly.FromDateTime(
+                new DateTime(
+                    currentDate.Year,
+                    currentDate.Month,
+                    DateTime.DaysInMonth(currentDate.Year, currentDate.Month)
+                )
+            );
+            Dictionary<DateOnly, List<string>> result = Utils.createMonth(
+                employeeId,
+                firstDayOfMonth,
+                lastDayOfMonth
+            );
+            projectDays.Add(currentDate.Month.ToString() + currentDate.Year.ToString(), result);
+            return result;
         }
         return month;
-    }
-
-    public Dictionary<DateOnly, List<string>> createMonth(DateTime currentDate)
-    {
-        Dictionary<DateOnly, List<string>> result = new Dictionary<DateOnly, List<string>>();
-        var projects = context.Employees.Find(this.employeeId)!.Projects;
-
-        foreach (Models.Project project in projects)
-        {
-            var employeeCount = project.Employees.Count();
-            DateOnly firstDayOfMonth = DateOnly.FromDateTime(new DateTime(currentDate.Year, currentDate.Month, 1));
-            DateOnly lastDayOfMonth = DateOnly.FromDateTime(new DateTime(currentDate.Year, currentDate.Month, DateTime.DaysInMonth(currentDate.Year, currentDate.Month)));
-
-            for (DateOnly date = firstDayOfMonth; date <= lastDayOfMonth; date = date.AddDays(1))
-            {
-                int employeesOnLeave = project.Employees.Where(e =>
-                                    e.Leaves.Any(l => l.StartDate <= date && l.EndDate >= date)).Count();
-                if (employeesOnLeave == project.Employees.Count() - 1)
-                {
-                    if (result.TryGetValue(date, out List<string> projectList))
-                    {
-                        projectList.Add(project.Name);
-                    }
-                    else
-                    {
-                        result.Add(date, new List<string>() { project.Name });
-                    }
-                }
-            }
-        }
-
-
-
-        projectDays.Add(currentDate.Month.ToString() + currentDate.Year.ToString(), result);
-        return result;
     }
 }

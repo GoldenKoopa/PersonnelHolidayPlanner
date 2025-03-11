@@ -8,6 +8,11 @@ class Program
 
     static void Main(string[] args)
     {
+
+        if (args.Length != 0) {
+            Headless.run(args);
+            return;
+        }
         Initialize();
 
         while (true)
