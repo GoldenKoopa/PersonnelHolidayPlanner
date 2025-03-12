@@ -19,17 +19,20 @@ Usage:
   PersonnelHolidayPlanner [OPTIONS]
 
 Options:
-  --employee ID     Optional employee ID (integer)
+  --employee ID     Optional employee ID (integer). If not provided, reads from environment variable 'employee_id'.
   --from DATE       Start date (required, format: YYYY-MM-DD)
   --to DATE         End date (required, format: YYYY-MM-DD)
+  --leaves          Optional flag to only show leave dates.
+  --json            Optional flag to output data in JSON format.
   -h, --help        Show this help message
 
 Example:
-  PersonnelHolidayPlanner --employee 42 --from 2025-06-01 --to 2025-06-15
+  PersonnelHolidayPlanner --employee 42 --from 2025-06-01 --to 2025-06-15 --leaves --json
 
 Note:
   Dates should follow ISO-8601 format (YYYY-MM-DD) for best compatibility.
   Alternative local formats may work but are not guaranteed.
+  If --employee is not provided, the 'employee_id' environment variable will be used.
 ";
 
     public static void run(string[] args)
