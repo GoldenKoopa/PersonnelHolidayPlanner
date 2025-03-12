@@ -42,6 +42,28 @@ public class Utils
         return result;
     }
 
+    public static HashSet<DateOnly> getEmployeeLeaveDates(
+        int employeeId,
+        DateOnly startDate,
+        DateOnly endDate
+    )
+    {
+        return new HashSet<DateOnly>(
+            Program
+                .context.Leaves.Where(l =>
+                    l.EmployeeId == employeeId && l.StartDate <= endDate &&
+                    l.EndDate >= startDate
+                )
+                .AsEnumerable()
+                .SelectMany(l =>
+                    Enumerable
+                        .Range(0, (l.EndDate.DayNumber - l.StartDate.DayNumber) +
+                        1) .Select(offset => l.StartDate.AddDays(offset))
+                        .Where(d => d >= startDate && d <= endDate)
+                )
+        );
+    }
+
     public static bool hasLeaveOnDate(int employeeId, DateOnly date)
     {
         return Program.context.Leaves.Any(leave =>

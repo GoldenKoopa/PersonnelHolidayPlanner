@@ -9,6 +9,7 @@ public class Headless
     private static DateOnly firstDay;
     private static DateOnly lastDay;
     private static bool json;
+    private static bool leaves;
 
     private const string HelpMessage =
         @"
@@ -41,6 +42,24 @@ Note:
         }
         replaceOptionalValues();
         validateArguments();
+        if (Headless.leaves)
+        {
+            HashSet<DateOnly> resultLeaves = Utils.getEmployeeLeaveDates(
+                Headless.employeeId,
+                Headless.firstDay,
+                Headless.lastDay
+            );
+            List<DateOnly> sortedLeaves = resultLeaves.OrderBy(d => d).ToList();
+            if (Headless.json)
+            {
+                PrintJsonLeaves(sortedLeaves);
+            }
+            else
+            {
+                PrettyPrintLeaves(sortedLeaves);
+            }
+            return;
+        }
         Dictionary<DateOnly, List<string>> result = Utils.generateTimeframe(
             Headless.employeeId,
             Headless.firstDay,
@@ -55,6 +74,43 @@ Note:
         {
             PrettyPrintTimeframe(result);
         }
+    }
+
+    public static void PrettyPrintLeaves(List<DateOnly> leaves)
+    {
+        if (leaves == null || leaves.Count == 0)
+        {
+            Console.WriteLine("NO_DATA");
+            return;
+        }
+
+        Console.WriteLine("LEAVES");
+
+        foreach (DateOnly date in leaves)
+        {
+            Console.WriteLine(date.ToString("yyyy-MM-dd"));
+        }
+    }
+
+    public static void PrintJsonLeaves(List<DateOnly> leaves)
+    {
+        if (leaves == null || leaves.Count == 0)
+        {
+            Console.WriteLine("{}");
+            return;
+        }
+
+        List<string> result = new();
+
+        foreach (DateOnly date in leaves)
+        {
+            result.Add(date.ToString("yyyy-MM-dd"));
+        }
+
+        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+
+        string jsonString = JsonSerializer.Serialize(result, jsonOptions);
+        Console.WriteLine(jsonString);
     }
 
     public static void PrintJsonTimeframe(Dictionary<DateOnly, List<string>> timeframe)
@@ -145,6 +201,9 @@ Note:
                 return;
             case "--to":
                 trySetEndDate(arguments);
+                return;
+            case "--leaves":
+                Headless.leaves = true;
                 return;
             case "--json":
                 Headless.json = true;
