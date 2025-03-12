@@ -1,6 +1,6 @@
-using Spectre.Console;
-using DotNetEnv;
 using System.Globalization;
+using DotNetEnv;
+using Spectre.Console;
 
 namespace PersonnelHolidayPlanner.Views;
 
@@ -210,7 +210,7 @@ public class CalendarView : View
                     DateTime.DaysInMonth(currentDate.Year, currentDate.Month)
                 )
             );
-            Dictionary<DateOnly, List<string>> result = Utils.createMonth(
+            Dictionary<DateOnly, List<string>> result = Utils.generateTimeframe(
                 employeeId,
                 firstDayOfMonth,
                 lastDayOfMonth

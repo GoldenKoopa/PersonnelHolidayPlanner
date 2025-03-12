@@ -1,10 +1,14 @@
+using System.Text.Json;
+using DotNetEnv;
+
 namespace PersonnelHolidayPlanner;
 
 public class Headless
 {
-    private static int employeeId;
+    private static int employeeId = -1;
     private static DateOnly firstDay;
     private static DateOnly lastDay;
+    private static bool json;
 
     private const string HelpMessage =
         @"
@@ -35,6 +39,94 @@ Note:
         {
             handleArgument(arguments);
         }
+        replaceOptionalValues();
+        validateArguments();
+        Dictionary<DateOnly, List<string>> result = Utils.generateTimeframe(
+            Headless.employeeId,
+            Headless.firstDay,
+            Headless.lastDay
+        );
+
+        if (Headless.json)
+        {
+            PrintJsonTimeframe(result);
+        }
+        else
+        {
+            PrettyPrintTimeframe(result);
+        }
+    }
+
+    public static void PrintJsonTimeframe(Dictionary<DateOnly, List<string>> timeframe)
+    {
+        if (timeframe == null || timeframe.Count == 0)
+        {
+            Console.WriteLine("{}");
+            return;
+        }
+
+        var jsonObject = new Dictionary<string, object>();
+
+        foreach (var entry in timeframe)
+        {
+            jsonObject[entry.Key.ToString("yyyy-MM-dd")] = new
+            {
+                project_count = entry.Value.Count,
+                projects = entry.Value,
+            };
+        }
+
+        var options = new JsonSerializerOptions { WriteIndented = true };
+
+        string jsonString = JsonSerializer.Serialize(jsonObject, options);
+        Console.WriteLine(jsonString);
+    }
+
+    public static void PrettyPrintTimeframe(Dictionary<DateOnly, List<string>> timeframe)
+    {
+        if (timeframe == null || timeframe.Count == 0)
+        {
+            Console.WriteLine("NO_DATA");
+            return;
+        }
+
+        // Print header
+        Console.WriteLine("DATE\t\tPROJECT_COUNT\tPROJECTS");
+
+        foreach (var entry in timeframe.OrderBy(e => e.Key))
+        {
+            string dateStr = entry.Key.ToString("yyyy-MM-dd");
+            string projectCount = entry.Value.Count.ToString();
+            string projects = string.Join("|", entry.Value);
+
+            Console.WriteLine($"{dateStr}\t{projectCount}\t\t{projects}");
+        }
+    }
+
+    private static void replaceOptionalValues()
+    {
+        if (Headless.employeeId != -1)
+        {
+            return;
+        }
+
+        Env.Load();
+        if (int.TryParse(Environment.GetEnvironmentVariable("employee_id"), out int employeeId))
+        {
+            Headless.employeeId = employeeId;
+            return;
+        }
+        Console.WriteLine("Default employeeId in is not a valid integer");
+        Environment.Exit(0);
+    }
+
+    private static void validateArguments()
+    {
+        if (Headless.firstDay == DateOnly.MinValue || Headless.lastDay == DateOnly.MinValue)
+        {
+            Console.WriteLine("First and/or last day are not set");
+            Environment.Exit(0);
+        }
     }
 
     public static void handleArgument(List<string> arguments)
@@ -54,11 +146,18 @@ Note:
             case "--to":
                 trySetEndDate(arguments);
                 return;
+            case "--json":
+                Headless.json = true;
+                return;
             case "--help":
             case "-h":
                 Console.WriteLine(HelpMessage);
                 Environment.Exit(0);
-                return; // get rid of cannot fall through final warning
+                return; // get rid of cannot fall through warning
+            default:
+                Console.WriteLine($"Invalid argument {arg}");
+                Environment.Exit(0);
+                return; // again, warning
         }
     }
 

@@ -2,7 +2,7 @@ namespace PersonnelHolidayPlanner;
 
 public class Utils
 {
-    public static Dictionary<DateOnly, List<string>> createMonth(
+    public static Dictionary<DateOnly, List<string>> generateTimeframe(
         int employeeId,
         DateOnly firstDay,
         DateOnly lastDay
@@ -22,7 +22,10 @@ public class Utils
                         e.Leaves.Any(l => l.StartDate <= date && l.EndDate >= date)
                     )
                     .Count();
-                if (employeesOnLeave == project.Employees.Count() - 1)
+                if (
+                    employeesOnLeave == project.Employees.Count() - 1
+                    && !hasLeaveOnDate(employeeId, date)
+                )
                 {
                     if (result.TryGetValue(date, out List<string>? projectList))
                     {
@@ -37,5 +40,12 @@ public class Utils
         }
 
         return result;
+    }
+
+    public static bool hasLeaveOnDate(int employeeId, DateOnly date)
+    {
+        return Program.context.Leaves.Any(leave =>
+            leave.EmployeeId == employeeId && leave.StartDate <= date && leave.EndDate >= date
+        );
     }
 }
