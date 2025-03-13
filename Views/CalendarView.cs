@@ -8,7 +8,7 @@ public class CalendarView : View
 {
     private int employeeId;
     DateTime currentDate = DateTime.Now;
-    DBContext.PHPContext context = Program.context;
+    DBContext.PHPContext context = Program.context!;
 
     private Dictionary<DateOnly, string> leaveTypes;
     private Dictionary<string, Dictionary<DateOnly, List<string>>> projectDays;
@@ -16,11 +16,17 @@ public class CalendarView : View
     public CalendarView()
     {
         Env.Load();
-        // if
-        // this.employeeId = Environment.GetEnvironmentVariable("employee_id");
-        this.employeeId = 1;
+        if (int.TryParse(Environment.GetEnvironmentVariable("employee_id"), out int employeeId))
+        {
+            this.employeeId = employeeId;
+        }
+        else
+        {
+            this.employeeId = 1;
+        }
+
         leaveTypes = new Dictionary<DateOnly, string>();
-        foreach (Models.Leave leave in context.Employees.Find(employeeId)!.Leaves)
+        foreach (Models.Leave leave in context.Employees.Find(this.employeeId)!.Leaves)
         {
             DateOnly startDate = leave.StartDate;
             DateOnly endDate = leave.EndDate;
@@ -128,6 +134,11 @@ public class CalendarView : View
         ConsoleModifiers keyModifiers = keyInfo.Modifiers;
         switch (key)
         {
+            // export
+            case ConsoleKey.E:
+                handleExports(keyModifiers);
+                break;
+
             // navigation
             case ConsoleKey.LeftArrow:
                 currentDate = currentDate.AddDays(-1);
@@ -187,6 +198,36 @@ public class CalendarView : View
             case ConsoleKey.Q:
                 Environment.Exit(0);
                 break;
+        }
+
+        // help
+        if (keyInfo.KeyChar == '?')
+        {
+            Program.state = AppState.HELP;
+        }
+    }
+
+    private void handleExports(ConsoleModifiers keyModifiers)
+    {
+        DateOnly firstDay = new DateOnly(currentDate.Year, 1, 1);
+        DateOnly lastDay = new DateOnly(
+            currentDate.Year,
+            12,
+            DateTime.DaysInMonth(currentDate.Year, currentDate.Month)
+        );
+        if (keyModifiers.HasFlag(ConsoleModifiers.Shift))
+        {
+            Utils.ExportLeavesToExcel(
+                Utils.getEmployeeLeaveDatesWithTypes(this.employeeId, firstDay, lastDay),
+                "output.xlsx"
+            );
+        }
+        else
+        {
+            Utils.ExportTimeframeToExcel(
+                Utils.generateTimeframe(this.employeeId, firstDay, lastDay),
+                "output.xlsx"
+            );
         }
     }
 

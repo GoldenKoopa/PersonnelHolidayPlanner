@@ -10,6 +10,8 @@ public class Headless
     private static DateOnly lastDay;
     private static bool json;
     private static bool leaves;
+    private static string outputFile = "output.xlsx";
+    private static bool export;
 
     private const string HelpMessage =
         @"
@@ -24,6 +26,8 @@ Options:
   --to DATE         End date (required, format: YYYY-MM-DD)
   --leaves          Optional flag to only show leave dates.
   --json            Optional flag to output data in JSON format.
+  --export          Optional flag to export data to Excel file.
+  -o, --output FILE Optional output file name for Excel export (default: output.xlsx)
   -h, --help        Show this help message
 
 Example:
@@ -33,6 +37,7 @@ Note:
   Dates should follow ISO-8601 format (YYYY-MM-DD) for best compatibility.
   Alternative local formats may work but are not guaranteed.
   If --employee is not provided, the 'employee_id' environment variable will be used.
+
 ";
 
     public static void run(string[] args)
@@ -47,22 +52,36 @@ Note:
         validateArguments();
         if (Headless.leaves)
         {
-            HashSet<DateOnly> resultLeaves = Utils.getEmployeeLeaveDates(
-                Headless.employeeId,
-                Headless.firstDay,
-                Headless.lastDay
-            );
-            List<DateOnly> sortedLeaves = resultLeaves.OrderBy(d => d).ToList();
-            if (Headless.json)
+            handleLeaves();
+        }
+        else
+        {
+            handleBlockedDays();
+        }
+    }
+
+    public static void handleBlockedDays()
+    {
+        if (Headless.export)
+        {
+            try
             {
-                PrintJsonLeaves(sortedLeaves);
+                Utils.ExportTimeframeToExcel(
+                    Utils.generateTimeframe(
+                        Headless.employeeId,
+                        Headless.firstDay,
+                        Headless.lastDay
+                    ),
+                    Headless.outputFile
+                );
             }
-            else
+            catch (Exception e)
             {
-                PrettyPrintLeaves(sortedLeaves);
+                Console.WriteLine($"export failed: {e.Message}");
             }
             return;
         }
+
         Dictionary<DateOnly, List<string>> result = Utils.generateTimeframe(
             Headless.employeeId,
             Headless.firstDay,
@@ -77,6 +96,46 @@ Note:
         {
             PrettyPrintTimeframe(result);
         }
+    }
+
+    public static void handleLeaves()
+    {
+        if (Headless.export)
+        {
+            try
+            {
+                Utils.ExportLeavesToExcel(
+                    Utils.getEmployeeLeaveDatesWithTypes(
+                        Headless.employeeId,
+                        Headless.firstDay,
+                        Headless.lastDay
+                    ),
+                    Headless.outputFile
+                );
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"export failed: {e.Message}");
+            }
+            return;
+        }
+
+        HashSet<DateOnly> resultLeaves = Utils.getEmployeeLeaveDates(
+            Headless.employeeId,
+            Headless.firstDay,
+            Headless.lastDay
+        );
+
+        List<DateOnly> sortedLeaves = resultLeaves.OrderBy(d => d).ToList();
+        if (Headless.json)
+        {
+            PrintJsonLeaves(sortedLeaves);
+        }
+        else
+        {
+            PrettyPrintLeaves(sortedLeaves);
+        }
+        return;
     }
 
     public static void PrettyPrintLeaves(List<DateOnly> leaves)
@@ -110,7 +169,7 @@ Note:
             result.Add(date.ToString("yyyy-MM-dd"));
         }
 
-        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        JsonSerializerOptions jsonOptions = new JsonSerializerOptions { WriteIndented = true };
 
         string jsonString = JsonSerializer.Serialize(result, jsonOptions);
         Console.WriteLine(jsonString);
@@ -124,9 +183,9 @@ Note:
             return;
         }
 
-        var jsonObject = new Dictionary<string, object>();
+        Dictionary<string, object> jsonObject = new();
 
-        foreach (var entry in timeframe)
+        foreach (KeyValuePair<DateOnly, List<string>> entry in timeframe)
         {
             jsonObject[entry.Key.ToString("yyyy-MM-dd")] = new
             {
@@ -135,7 +194,7 @@ Note:
             };
         }
 
-        var options = new JsonSerializerOptions { WriteIndented = true };
+        JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
 
         string jsonString = JsonSerializer.Serialize(jsonObject, options);
         Console.WriteLine(jsonString);
@@ -152,7 +211,7 @@ Note:
         // Print header
         Console.WriteLine("DATE\t\tPROJECT_COUNT\tPROJECTS");
 
-        foreach (var entry in timeframe.OrderBy(e => e.Key))
+        foreach (KeyValuePair<DateOnly, List<string>> entry in timeframe.OrderBy(e => e.Key))
         {
             string dateStr = entry.Key.ToString("yyyy-MM-dd");
             string projectCount = entry.Value.Count.ToString();
@@ -198,29 +257,47 @@ Note:
         {
             case "--employee": // optional
                 trySetEmployee(arguments);
-                return;
+                break;
             case "--from":
                 trySetStartDate(arguments);
-                return;
+                break;
             case "--to":
                 trySetEndDate(arguments);
-                return;
+                break;
             case "--leaves":
                 Headless.leaves = true;
-                return;
+                break;
             case "--json":
                 Headless.json = true;
-                return;
+                break;
+            case "--export":
+                Headless.export = true;
+                break;
+            case "-o":
+            case "--output":
+                trySetOutput(arguments);
+                break;
             case "--help":
             case "-h":
                 Console.WriteLine(HelpMessage);
                 Environment.Exit(0);
-                return; // get rid of cannot fall through warning
+                break; // get rid of cannot fall through warning
             default:
                 Console.WriteLine($"Invalid argument {arg}");
                 Environment.Exit(0);
-                return; // again, warning
+                break; // again, warning
         }
+    }
+
+    public static void trySetOutput(List<string> arguments)
+    {
+        if (arguments.Count() == 0 || arguments[0].StartsWith("--"))
+        {
+            Console.WriteLine("missing value for argument '--output'/'-o'");
+            Environment.Exit(0);
+        }
+        Headless.outputFile = arguments[0];
+        arguments.RemoveAt(0);
     }
 
     public static void trySetEndDate(List<string> arguments)

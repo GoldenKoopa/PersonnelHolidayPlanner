@@ -1,20 +1,23 @@
-﻿namespace PersonnelHolidayPlanner;
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace PersonnelHolidayPlanner;
 
 class Program
 {
-    // intial view
-    static Views.AppState state = Views.AppState.CALENDAR;
-    public static DBContext.PHPContext context = new DBContext.PHPContext();
+    public static Views.AppState state;
+    public static DBContext.PHPContext? context;
 
     static void Main(string[] args)
     {
+        Initialize();
 
-        if (args.Length != 0) {
+        if (args.Length != 0)
+        {
             Headless.run(args);
             return;
         }
-        Initialize();
 
+        // not headless
         while (true)
         {
             RenderViews();
@@ -25,7 +28,20 @@ class Program
 
     public static void Initialize()
     {
-        // Console.WriteLine(context.Leaves.First().LeaveType);
+        try
+        {
+            context = new DBContext.PHPContext();
+
+            // test connection
+            context.Database.OpenConnection();
+            context.Database.CloseConnection();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Database connection failed. {e.Message}");
+            Environment.Exit(0);
+        }
+        state = Views.AppState.CALENDAR;
     }
 
     public static void RenderViews()

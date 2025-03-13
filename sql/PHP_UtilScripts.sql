@@ -17,7 +17,7 @@ order by
 select
 	e.firstname,
 	e.lastname,
-	ld.LeaveDayId,
+	ld.LeaveId,
 	ld.StartDate,
 	ld.EndDate,
 	ld.LeaveType
