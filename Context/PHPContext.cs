@@ -24,9 +24,6 @@ public partial class PHPContext : DbContext
         ConnStr = builder.ConnectionString;
     }
 
-    public PHPContext(DbContextOptions<PHPContext> options)
-        : base(options) { }
-
     public virtual DbSet<Employee> Employees { get; set; }
 
     public virtual DbSet<Leave> Leaves { get; set; }

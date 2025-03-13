@@ -3,6 +3,8 @@
 -- 			5 employees, 3 projects and 3 leaves per employee between
 -- 			january 2025 and april 2025
 
+USE PHP;
+GO
 
 -- Insert sample employees
 INSERT INTO Employee (FirstName, LastName)
@@ -32,21 +34,27 @@ VALUES
     (2, '2025-01-22', '2025-01-24', 'Vacation'),
     (2, '2025-02-28', '2025-02-28', 'Personal'),
     (2, '2025-04-05', '2025-04-07', 'Sick'),
+    (2, '2025-03-17', '2025-03-28', 'Vacation'),
 
     -- Michael Johnson's leaves
     (3, '2025-02-01', '2025-02-05', 'Vacation'),
     (3, '2025-03-15', '2025-03-15', 'Personal'),
     (3, '2025-04-10', '2025-04-11', 'Sick'),
+    (3, '2025-03-20', '2025-03-21', 'Personal'),
+    (3, '2025-03-05', '2025-03-15', 'Vacation'),
 
     -- Emily Brown's leaves
     (4, '2025-01-05', '2025-01-09', 'Vacation'),
     (4, '2025-02-14', '2025-02-14', 'Personal'),
     (4, '2025-03-20', '2025-03-22', 'Sick'),
+    (4, '2025-03-02', '2025-03-20', 'Vacation'),
 
     -- David Wilson's leaves
     (5, '2025-03-01', '2025-03-05', 'Vacation'),
     (5, '2025-04-01', '2025-04-01', 'Personal'),
-    (5, '2025-04-15', '2025-04-16', 'Sick');
+    (5, '2025-04-15', '2025-04-16', 'Sick'),
+    (5, '2025-03-20', '2025-03-21', 'Personal'),
+    (5, '2025-02-28', '2025-03-10', 'Vacation');
 
 -- Assign employees to projects
 INSERT INTO EmployeeProject (EmployeeId, ProjectId)

@@ -101,13 +101,15 @@ public class CalendarView : View
             table.AddRow(currentRow.ToArray());
         }
 
+        AnsiConsole.Write(new Panel("Press '?' for help"));
         AnsiConsole.Write(
             new Panel(table)
                 .Header($"[bold green]{currentDate:MMMM yyyy}[/]", Justify.Center)
                 .BorderColor(Color.Blue)
         );
 
-        Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
+
+        // Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
         string text = $"[bold green]You selected: {currentDate.ToShortDateString()}[/]";
         DateOnly currentDayOnly = DateOnly.FromDateTime(currentDate);
         if (leaveTypes.ContainsKey(currentDayOnly))

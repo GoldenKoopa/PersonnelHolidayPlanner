@@ -1,3 +1,6 @@
 dotnet run --from 2005-09-09 --to 2030-08-07
 dotnet run --from 2005-09-09 --to 2030-08-07 |  cowsay -n
 dotnet run --from 2005-09-09 --to 2030-08-07 > output.txt
+dotnet run --from 2005-09-09 --to 2030-08-07 --json
+dotnet run --from 2005-09-09 --to 2030-08-07 --leaves
+dotnet run --from 2005-09-09 --to 2030-08-07 --export -o custom_output.xlsx
